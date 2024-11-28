@@ -6,91 +6,47 @@ import { Smile, Meh, Frown } from 'lucide-react';
 
 const MonthlyReviewDashboard = () => {
   const [monthlyData, setMonthlyData] = useState({
-    goals: {
-      일기: 0,
-      약먹기: 0,
-      운동: 0,
-      일본어: 0,
-      드로잉: 0,
-    },
-    moods: {
-      "좋음 😊": 0,
-      "보통 😐": 0,
-      "나쁨 😔": 0,
-    },
-    totalDays: 0
+    goals: {},
+    moods: { "좋음 😊": 0, "보통 😐": 0, "나쁨 😔": 0 },
+    totalDays: 30,
   });
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch('/api/notion-data');
-        const data = await response.json();
-        
-        console.log('Raw Notion Data:', data);
+    async function fetchData() {
+      const response = await fetch('/api/notion-data');
+      const data = await response.json();
 
-        const processedData = {
-          goals: {
-            일기: 0,
-            약먹기: 0,
-            운동: 0,
-            일본어: 0,
-            드로잉: 0,
-          },
-          moods: {
-            "좋음 😊": 0,
-            "보통 😐": 0,
-            "나쁨 😔": 0,
-          },
-          totalDays: 0
-        };
+      // 목표 달성도 매핑
+      const calculateGoals = (notionData) => {
+        return notionData.reduce((acc, item) => {
+          acc[item.name] = item.numberField; // name과 numberField로 목표값 매핑
+          return acc;
+        }, {});
+      };
 
-        if (Array.isArray(data)) {
-          processedData.totalDays = data.length;
-          console.log('Total Days:', processedData.totalDays);
+      // 무드 트래커 매핑
+      const calculateMoods = (notionData) => {
+        const moodCounts = { "좋음 😊": 0, "보통 😐": 0, "나쁨 😔": 0 };
+        notionData.forEach((item) => {
+          if (item.mood && moodCounts[item.mood] !== undefined) {
+            moodCounts[item.mood] += 1;
+          }
+        });
+        return moodCounts;
+      };
 
-          data.forEach(page => {
-            console.log('Page Properties:', page.properties);
-            
-            if (page.properties) {
-              // 체크박스 값 처리
-              Object.keys(processedData.goals).forEach(goal => {
-                const isChecked = page.properties[goal]?.checkbox;
-                console.log(`${goal} checked:`, isChecked);
-                if (isChecked === true) {
-                  processedData.goals[goal]++;
-                }
-              });
-              
-              // 기분 값 처리
-              const mood = page.properties['오늘의 기분']?.select?.name;
-              console.log('Mood:', mood);
-              if (mood && processedData.moods.hasOwnProperty(mood)) {
-                processedData.moods[mood]++;
-              }
-            }
-          });
-        }
-
-        console.log('Processed Data:', processedData);
-        setMonthlyData(processedData);
-      } catch (error) {
-        console.error('Error fetching Notion data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+      // 상태 업데이트
+      setMonthlyData({
+        goals: calculateGoals(data),
+        moods: calculateMoods(data),
+        totalDays: 30,
+      });
+    }
 
     fetchData();
   }, []);
 
-  if (loading) {
-    return <div className="flex items-center justify-center p-8">데이터를 불러오는 중...</div>;
-  }
-
   const calculatePercentage = (achieved, total) => {
-    if (total === 0) return 0;
     return Math.round((achieved / total) * 100);
   };
 
@@ -114,9 +70,7 @@ const MonthlyReviewDashboard = () => {
                 <div key={name} className="space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="font-medium">{name}</span>
-                    <span className={getProgressColor(percentage)}>
-                      {percentage}%
-                    </span>
+                    <span className={getProgressColor(percentage)}>{percentage}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
