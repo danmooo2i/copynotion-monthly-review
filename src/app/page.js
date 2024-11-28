@@ -1,4 +1,11 @@
-import MonthlyReviewDashboard from '../components/MonthlyReviewDashboard';
+'use client';
+
+import dynamic from 'next/dynamic';
+
+const MonthlyReviewDashboard = dynamic(
+  () => import('../components/MonthlyReviewDashboard'),
+  { ssr: false }
+);
 
 export default function Home() {
   return (

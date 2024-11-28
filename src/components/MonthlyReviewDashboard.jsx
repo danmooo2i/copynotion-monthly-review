@@ -30,11 +30,6 @@ const MonthlyReviewDashboard = () => {
         
         console.log('Raw Notion Data:', data);
 
-        if (data.error) {
-          console.error('API Error:', data.error);
-          return;
-        }
-
         const processedData = {
           goals: {
             일기: 0,
@@ -52,23 +47,30 @@ const MonthlyReviewDashboard = () => {
         };
 
         if (Array.isArray(data)) {
+          processedData.totalDays = data.length;
+          console.log('Total Days:', processedData.totalDays);
+
           data.forEach(page => {
+            console.log('Page Properties:', page.properties);
+            
             if (page.properties) {
-              // 체크박스 속성 처리
+              // 체크박스 값 처리
               Object.keys(processedData.goals).forEach(goal => {
-                if (page.properties[goal]?.checkbox === true) {
+                const isChecked = page.properties[goal]?.checkbox;
+                console.log(`${goal} checked:`, isChecked);
+                if (isChecked === true) {
                   processedData.goals[goal]++;
                 }
               });
               
-              // 기분 처리
+              // 기분 값 처리
               const mood = page.properties['오늘의 기분']?.select?.name;
+              console.log('Mood:', mood);
               if (mood && processedData.moods.hasOwnProperty(mood)) {
                 processedData.moods[mood]++;
               }
             }
           });
-          processedData.totalDays = data.length;
         }
 
         console.log('Processed Data:', processedData);
@@ -88,6 +90,7 @@ const MonthlyReviewDashboard = () => {
   }
 
   const calculatePercentage = (achieved, total) => {
+    if (total === 0) return 0;
     return Math.round((achieved / total) * 100);
   };
 
