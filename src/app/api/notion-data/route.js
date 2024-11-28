@@ -22,14 +22,15 @@ export async function GET(req, res) {
     console.log("Notion API Response:", JSON.stringify(response, null, 2));
 
     // 데이터 파싱 및 숫자 필드 처리
-    const results = response.results.map((item) => {
-      const properties = item.properties;
-      return {
-        id: item.id,
-        name: properties.Name?.title?.[0]?.text?.content || "Untitled",
-        numberField: properties.Number?.number ?? null, // 숫자 필드
-      };
-    });
+const results = response.results.map((item) => {
+  const properties = item.properties;
+  return {
+    id: item.id,
+    name: properties.Name?.title?.[0]?.text?.content || "Untitled",
+    numberField: properties.Number?.number ?? null,
+    mood: properties['오늘의 기분']?.select?.name || null  // 필드명 수정
+  };
+});
 
     // 결과 반환
     return new Response(JSON.stringify(results), { status: 200 });

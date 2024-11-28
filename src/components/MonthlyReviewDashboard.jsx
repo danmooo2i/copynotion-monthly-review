@@ -13,34 +13,40 @@ const MonthlyReviewDashboard = () => {
 
   useEffect(() => {
     async function fetchData() {
-      const response = await fetch('/api/notion-data');
-      const data = await response.json();
+      try {
+        const response = await fetch('/api/notion-data');
+        const data = await response.json();
+        console.log('Fetched data:', data); // 데이터 확인용
 
-      // 목표 달성도 매핑
-      const calculateGoals = (notionData) => {
-        return notionData.reduce((acc, item) => {
-          acc[item.name] = item.numberField; // name과 numberField로 목표값 매핑
-          return acc;
-        }, {});
-      };
+        // 목표 달성도 매핑
+        const calculateGoals = (notionData) => {
+          return notionData.reduce((acc, item) => {
+            acc[item.name] = item.numberField;
+            return acc;
+          }, {});
+        };
 
-      // 무드 트래커 매핑
-      const calculateMoods = (notionData) => {
-        const moodCounts = { "좋음 😊": 0, "보통 😐": 0, "나쁨 😔": 0 };
-        notionData.forEach((item) => {
-          if (item.mood && moodCounts[item.mood] !== undefined) {
-            moodCounts[item.mood] += 1;
-          }
+        // 무드 트래커 매핑
+        const calculateMoods = (notionData) => {
+          const moodCounts = { "좋음 😊": 0, "보통 😐": 0, "나쁨 😔": 0 };
+          notionData.forEach((item) => {
+            console.log('Mood item:', item['오늘의 기분']); // 디버깅용
+            if (item['오늘의 기분'] && moodCounts[item['오늘의 기분']] !== undefined) {
+              moodCounts[item['오늘의 기분']] += 1;
+            }
+          });
+          return moodCounts;
+        };
+
+        // 상태 업데이트
+        setMonthlyData({
+          goals: calculateGoals(data),
+          moods: calculateMoods(data),
+          totalDays: 30,
         });
-        return moodCounts;
-      };
-
-      // 상태 업데이트
-      setMonthlyData({
-        goals: calculateGoals(data),
-        moods: calculateMoods(data),
-        totalDays: 30,
-      });
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
     }
 
     fetchData();
@@ -99,21 +105,27 @@ const MonthlyReviewDashboard = () => {
           <Card.Title>오늘의 기분</Card.Title>
         </Card.Header>
         <Card.Content>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="flex flex-col items-center space-y-2">
-              <Smile className="w-12 h-12 text-green-500" />
-              <span className="text-2xl font-bold">{monthlyData.moods["좋음 😊"]}</span>
-              <span className="text-sm text-gray-500">좋음 😊</span>
+          <div className="flex justify-around items-center">
+            <div className="text-center">
+              <Smile className="w-12 h-12 text-green-500 mx-auto" />
+              <div className="mt-2">
+                <div className="text-xl font-bold">{monthlyData.moods["좋음 😊"]}</div>
+                <div className="text-sm text-gray-500">좋음 😊</div>
+              </div>
             </div>
-            <div className="flex flex-col items-center space-y-2">
-              <Meh className="w-12 h-12 text-yellow-500" />
-              <span className="text-2xl font-bold">{monthlyData.moods["보통 😐"]}</span>
-              <span className="text-sm text-gray-500">보통 😐</span>
+            <div className="text-center">
+              <Meh className="w-12 h-12 text-yellow-500 mx-auto" />
+              <div className="mt-2">
+                <div className="text-xl font-bold">{monthlyData.moods["보통 😐"]}</div>
+                <div className="text-sm text-gray-500">보통 😐</div>
+              </div>
             </div>
-            <div className="flex flex-col items-center space-y-2">
-              <Frown className="w-12 h-12 text-red-500" />
-              <span className="text-2xl font-bold">{monthlyData.moods["나쁨 😔"]}</span>
-              <span className="text-sm text-gray-500">나쁨 😔</span>
+            <div className="text-center">
+              <Frown className="w-12 h-12 text-red-500 mx-auto" />
+              <div className="mt-2">
+                <div className="text-xl font-bold">{monthlyData.moods["나쁨 😔"]}</div>
+                <div className="text-sm text-gray-500">나쁨 😔</div>
+              </div>
             </div>
           </div>
         </Card.Content>
