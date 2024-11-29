@@ -1,12 +1,19 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Card from './ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { Smile, Meh, Frown } from 'lucide-react';
 
 const MonthlyReviewDashboard = () => {
   const [monthlyData, setMonthlyData] = useState({
-    goals: {},
+    goals: {
+      약먹기: 0,
+      운동: 0,
+      일본어: 0,
+      드로잉: 0,
+      일기: 0,
+    },
     moods: { "좋음 😊": 0, "보통 😐": 0, "나쁨 😔": 0 },
     totalDays: 30,
   });
@@ -16,39 +23,32 @@ const MonthlyReviewDashboard = () => {
       try {
         const response = await fetch('/api/notion-data');
         const data = await response.json();
-        console.log('Fetched data:', data); // 데이터 확인용
-
-        // 목표 달성도 매핑
-        const calculateGoals = (notionData) => {
-          return notionData.reduce((acc, item) => {
-            acc[item.name] = item.numberField;
-            return acc;
-          }, {});
+        
+        const goals = {
+          약먹기: 0,
+          운동: 0,
+          일본어: 0,
+          드로잉: 0,
+          일기: 0,
         };
-
-        // 무드 트래커 매핑
-        const calculateMoods = (notionData) => {
-          const moodCounts = { "좋음 😊": 0, "보통 😐": 0, "나쁨 😔": 0 };
-          notionData.forEach((item) => {
-            console.log('Mood item:', item['오늘의 기분']); // 디버깅용
-            if (item['오늘의 기분'] && moodCounts[item['오늘의 기분']] !== undefined) {
-              moodCounts[item['오늘의 기분']] += 1;
-            }
-          });
-          return moodCounts;
-        };
-
-        // 상태 업데이트
-        setMonthlyData({
-          goals: calculateGoals(data),
-          moods: calculateMoods(data),
-          totalDays: 30,
+        const moodCounts = { "좋음 😊": 0, "보통 😐": 0, "나쁨 😔": 0 };
+        
+        data.forEach(item => {
+          goals.약먹기 += item.약먹기 ? 1 : 0;
+          goals.운동 += item.운동 ? 1 : 0;
+          goals.일본어 += item.일본어 ? 1 : 0;
+          goals.드로잉 += item.드로잉 ? 1 : 0;
+          goals.일기 += item.일기 ? 1 : 0;
+          if (item.mood && moodCounts[item.mood] !== undefined) {
+            moodCounts[item.mood] += 1;
+          }
         });
+        
+        setMonthlyData({ goals, moods: moodCounts, totalDays: 30 });
       } catch (error) {
         console.error('Error fetching data:', error);
       }
     }
-
     fetchData();
   }, []);
 
@@ -56,40 +56,32 @@ const MonthlyReviewDashboard = () => {
     return Math.round((achieved / total) * 100);
   };
 
-  const getProgressColor = (percentage) => {
-    if (percentage >= 80) return 'text-green-500';
-    if (percentage >= 50) return 'text-yellow-500';
-    return 'text-red-500';
-  };
-
   return (
     <div className="space-y-6 p-4">
       <Card>
-        <Card.Header>
-          <Card.Title>월간 목표 달성도</Card.Title>
-        </Card.Header>
-        <Card.Content>
-          <div className="space-y-4">
+        <CardHeader>
+          <CardTitle>월간 목표 달성도</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
             {Object.entries(monthlyData.goals).map(([name, achieved]) => {
               const percentage = calculatePercentage(achieved, monthlyData.totalDays);
               return (
                 <div key={name} className="space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="font-medium">{name}</span>
-                    <span className={getProgressColor(percentage)}>{percentage}%</span>
+                    <span className="text-sm font-medium">
+                      {percentage}%
+                    </span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full ${
-                        percentage >= 80
-                          ? 'bg-green-500'
-                          : percentage >= 50
-                          ? 'bg-yellow-500'
-                          : 'bg-red-500'
-                      }`}
-                      style={{ width: `${percentage}%` }}
-                    />
-                  </div>
+                  <Progress
+                    value={percentage}
+                    className={`h-2 ${
+                      percentage >= 80 ? 'bg-green-500' :
+                      percentage >= 50 ? 'bg-yellow-500' :
+                      'bg-red-500'
+                    }`}
+                  />
                   <div className="text-sm text-gray-500">
                     {achieved}/{monthlyData.totalDays}일 달성
                   </div>
@@ -97,14 +89,14 @@ const MonthlyReviewDashboard = () => {
               );
             })}
           </div>
-        </Card.Content>
+        </CardContent>
       </Card>
 
       <Card>
-        <Card.Header>
-          <Card.Title>오늘의 기분</Card.Title>
-        </Card.Header>
-        <Card.Content>
+        <CardHeader>
+          <CardTitle>오늘의 기분</CardTitle>
+        </CardHeader>
+        <CardContent>
           <div className="flex justify-around items-center">
             <div className="text-center">
               <Smile className="w-12 h-12 text-green-500 mx-auto" />
@@ -128,7 +120,7 @@ const MonthlyReviewDashboard = () => {
               </div>
             </div>
           </div>
-        </Card.Content>
+        </CardContent>
       </Card>
     </div>
   );
